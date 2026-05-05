@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>兩年讀經進度靈修隨身本</title>
+    <title>SJPCT 兩年讀經進度</title>
     
+    <meta name="theme-color" content="#1C2938">
+
     <style>
         :root {
-            --bg-color: #FDF5E6;
-            --card-color: #FFF9F0;
-            --text-color: #4A4A4A;
-            --accent-color: #BC8F8F;
-            --secondary-color: #D2B48C;
-            --success-color:#A3B18A;
-            --nav-bg:#EEDCC6;
+            --bg-color: #1C2938;       
+            --card-color: #2A3B4C;     
+            --text-color: #F4F1EA;     
+            --accent-color: #E07A5F;   
+            --secondary-color: #4A6076;
+            --success-color: #7CA982;  
+            --nav-bg: #15202B;         
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; 
-            background: var(--bg-color); 
-            color: var(--text-color); 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            overflow: hidden; 
+            background: var(--bg-color); color: var(--text-color); 
+            margin: 0; display: flex; flex-direction: column; 
+            height: 100vh; overflow: hidden; 
         }
-
         header { 
-            padding: 15px; 
-            text-align: center; 
-            background: var(--card-color); 
+            padding: 15px; text-align: center; background: var(--card-color); 
             border-bottom: 1px solid var(--secondary-color); 
-            font-weight: bold; 
-            font-size: 1.1rem; 
+            font-weight: bold; font-size: 1.1rem; 
         }
         main { flex: 1; overflow-y: auto; padding-bottom: 80px; }
         
@@ -41,80 +36,126 @@
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 月曆樣式 */
         .calendar-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .nav-arrow { 
             background: var(--card-color); border: 1px solid var(--secondary-color); 
-            border-radius: 50%; width: 40px; height: 40px; cursor: pointer; 
+            border-radius: 50%; width: 40px; height: 40px; 
             display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
             color: var(--accent-color);
         }
-
         .calendar-grid { 
             display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; 
-            background: rgba(188, 143, 143, 0.05); padding: 10px; border-radius: 18px; 
+            background: rgba(42, 59, 76, 0.5); padding: 10px; border-radius: 18px; 
         }
-
         .weekday { text-align: center; font-size: 0.75rem; font-weight: bold; color: var(--accent-color); padding: 5px 0; }
-        
         .day-cell { 
             background: var(--card-color); aspect-ratio: 1; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; position: relative; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem; 
         }
-
-        .day-cell.today { border: 2.5px solid var(--accent-color); font-weight: bold; color: var(--accent-color); }
+        .day-cell.empty { background: transparent; }
         
-        .day-cell.done { 
-            background-color: var(--success-color); 
-            color: white; 
-            border-radius: 10px; 
-        }
-
-        .day-cell.today.done {
-            border: 2.5px solid var(--accent-color);
-            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3); 
-        }
-        .day-cell.empty { background: transparent; cursor: default; }
-
-        .modal { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; 
-        }
-        .modal-content { 
-            background: var(--bg-color); width: 100%; max-width: 320px; padding: 30px; 
-            border-radius: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
-        }
-        .btn-action { 
-            background: var(--accent-color); color: white; border: none; padding: 14px; 
-            border-radius: 15px; margin-top: 20px; width: 100%; font-size: 1rem; cursor: pointer; font-weight: bold;
-        }
-        .btn-action.is-done { background: var(--success-color); }
+        .day-cell.today { border: 2.5px solid var(--accent-color); font-weight: bold; color: var(--accent-color); }
+        .day-cell.done { background-color: var(--success-color); color: white; border-radius: 10px; border: none; }
+        .day-cell.today.done { border: 2.5px solid var(--accent-color); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3); }
 
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; height: 75px; 
             background: var(--nav-bg); display: flex; justify-content: space-around; 
             align-items: center; padding-bottom: env(safe-area-inset-bottom); 
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05); 
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3); 
         }
         .nav-item { 
             border: none; background: none; font-size: 0.8rem; display: flex; 
             flex-direction: column; align-items: center; color: var(--text-color); 
             opacity: 0.5; transition: 0.3s;
         }
-        .nav-item.active-nav { opacity: 1; font-weight: bold; color: #8b5a5a; }
+        .nav-item.active-nav { opacity: 1; font-weight: bold; color: var(--accent-color); }
         .nav-icon { font-size: 1.5rem; margin-bottom: 4px; }
 
-        .bible-container { background: var(--card-color); border-radius: 20px; padding: 20px; border: 1px solid var(--secondary-color); line-height: 1.8; }
-        .verse-num { color: var(--secondary-color); font-size: 0.8rem; margin-right: 6px; vertical-align: super; }
-        .chap-title { color: var(--accent-color); border-bottom: 1px solid #eee; padding: 20px 0 5px 0; margin-top: 0; }
-
+        .bible-container { background: var(--card-color); border-radius: 20px; padding: 20px; border: 1px solid var(--secondary-color); }
+        textarea { 
+            width: 100%; height: 400px; border: 1px solid var(--secondary-color); 
+            border-radius: 20px; padding: 20px; background: var(--card-color); 
+            font-size: 1.05rem; outline: none; resize: none; color: var(--text-color); 
+        }
     </style>
-
 </head>
 
 <body>
+<header>SJPCT 兩年讀經進度</header>
+
+<main>
+    <section id="bible" class="page">
+        <div class="bible-container">
+            <h3 style="margin-top:0; color:var(--accent-color);">閱讀區預覽</h3>
+            <div style="color: var(--secondary-color);">目前是純視覺版，尚未串接經文資料。</div>
+        </div>
+    </section>
+
+    <section id="home" class="page active">
+        <div class="calendar-nav">
+            <button class="nav-arrow">‹</button>
+            <span style="font-size: 1.2rem; font-weight: bold;">2026年 3月</span>
+            <button class="nav-arrow">›</button>
+        </div>
+        <!-- 這裡會被下方的 JavaScript 填滿假格子 -->
+        <div class="calendar-grid" id="calendar-body"></div>
+    </section>
+
+    <!-- 分頁三：日記區 -->
+    <section id="diary" class="page">
+        <textarea placeholder="寫下今日的心得或禱告"></textarea>
+    </section>
+</main>
+
+<!-- 底部按鈕導覽列 -->
+<nav class="bottom-nav">
+    <button class="nav-item" onclick="switchPage('bible', this)">聖經</button>
+    <button class="nav-item active-nav" onclick="switchPage('home', this)">進度</button>
+    <button class="nav-item" onclick="switchPage('diary', this)">日記</button>
+</nav>
+
+<!-- 最基本的互動功能 -->
+<script>
+    // 1. 切換分頁的功能
+    function switchPage(pageId, btn) {
+        // 隱藏所有內容
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        // 顯示被點選的內容
+        document.getElementById(pageId).classList.add('active');
+        
+        // 重置所有按鈕的狀態
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active-nav'));
+        // 讓被點選的按鈕亮起
+        btn.classList.add('active-nav');
+    }
+
+    // 2. 畫出預覽用的假月曆
+    function renderVisualCalendar() {
+        const grid = document.getElementById('calendar-body');
+        const weeks = ['日', '一', '二', '三', '四', '五', '六'];
+        
+        // 填寫星期標題
+        weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
+        
+        // 放入兩個空格，假裝這個月是從禮拜二開始
+        grid.innerHTML += `<div class="day-cell empty"></div><div class="day-cell empty"></div>`;
+        
+        // 畫出 31 天的格子
+        for (let d = 1; d <= 31; d++) {
+            let status = "";
+            // 隨機設定幾天為「已完成」，以及指定一天為「今天」，讓您預覽效果
+            if (d === 1 || d === 2 || d === 3) status = "done";
+            if (d === 15) status = "today";
+            if (d === 14) status = "done";
+            
+            grid.innerHTML += `<div class="day-cell ${status}">${d}</div>`;
+        }
+    }
+
+    // 執行畫月曆指令
+    renderVisualCalendar();
+</script>
 
 </body>
-
 </html>
