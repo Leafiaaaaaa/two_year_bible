@@ -12,13 +12,13 @@
 
     <style>
          :root {
-            --bg-color: #1C2938;       
-            --card-color: #2A3B4C;     
-            --text-color: #F4F1EA;     
-            --accent-color: #E07A5F;   
-            --secondary-color: #4A6076;
-            --success-color: #7CA982;  
-            --nav-bg: #15202B;         
+            --bg-color: #1C2938;   /* 全部背景 */    
+            --card-color: #2A3B4C;   /* 格子 */  
+            --text-color: #F4F1EA;   /* 文字 */
+            --accent-color: #E07A5F;   /* 強調色 */
+            --secondary-color: #4A6076;   /* 次要顏色 */
+            --success-color: #7CA982;   /* 成功顏色 */
+            --nav-bg: #15202B;         /* 導覽列顏色 */
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -49,7 +49,7 @@
         .active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 通用導覽列樣式 (月曆與日記共用) */
+        /* 通用導覽列 (月曆與日記) */
         .calendar-nav, .diary-nav { 
             display: flex; 
             justify-content: space-between; 
@@ -120,7 +120,6 @@
             opacity: 0.5; transition: 0.3s; cursor: pointer; padding: 10px;
         }
         .nav-item.active-nav { opacity: 1; font-weight: bold; color: var(--accent-color); }
-        .nav-icon { font-size: 1.2rem; margin-bottom: 4px; font-weight: bold; }
 
         /* 聖經與日記區 */
         .bible-container { background: var(--card-color); border-radius: 20px; padding: 20px; border: 1px solid var(--secondary-color); line-height: 1.8; }
@@ -175,20 +174,21 @@
 </div>
 
 <nav class="bottom-nav">
-    <button class="nav-item" id="nav-bible" onclick="switchPage('bible', this)"><span class="nav-icon">閱讀</span></button>
-    <button class="nav-item active-nav" id="nav-home" onclick="switchPage('home', this)"><span class="nav-icon">進度</span></button>
-    <button class="nav-item" id="nav-diary" onclick="switchPage('diary', this)"><span class="nav-icon">日記</span></button>
+    <button class="nav-item" id="nav-bible" onclick="switchPage('bible', this)">閱讀</button>
+    <button class="nav-item active-nav" id="nav-home" onclick="switchPage('home', this)">進度</button>
+    <button class="nav-item" id="nav-diary" onclick="switchPage('diary', this)">日記</button>
 </nav>
 
 <script>
     const biblePlan = {};
     const now = new Date();
+    
     let viewYear = now.getFullYear();
     let viewMonth = now.getMonth() + 1;
     let selectedDay = now.getDate();
     let diaryDate = new Date();
 
-    // 初始化讀經資料
+    // 初始化讀經進度資料
     function initData() {
         if (typeof rawBibleData === 'undefined') {
             console.error("錯誤：找不到 rawBibleData。請檢查 data.js 是否存在。");
@@ -209,14 +209,14 @@
         const weeks = ['日', '一', '二', '三', '四', '五', '六'];
         weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
 
-        const firstDay = new Date(viewYear, viewMonth - 1, 1).getDay();
-        const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+        const firstDay = new Date(viewYear, viewMonth - 1, 1).getDay(); /* 算出這個月一號是星期幾就畫幾個空格 */
+        const daysInMonth = new Date(viewYear, viewMonth, 0).getDate(); /* 算出這個月有幾天 */
 
         for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div class="day-cell empty"></div>`;
 
         for (let d = 1; d <= daysInMonth; d++) {
             const isToday = (d === now.getDate() && viewMonth === (now.getMonth() + 1) && viewYear === now.getFullYear()) ? 'today' : '';
-            const isDone = localStorage.getItem(`done_${viewYear}_${viewMonth}_${d}`) ? 'done' : '';
+            const isDone = localStorage.getItem(`done_${viewYear}_${viewMonth}_${d}`) ? 'done' : ''; /* 確認是否已完成 */
             grid.innerHTML += `<div class="day-cell ${isToday} ${isDone}" onclick="openDetail(${d})">${d}</div>`;
         }
         document.getElementById('cal-label').innerText = `${viewYear}年 ${viewMonth}月`;
@@ -230,6 +230,7 @@
         renderCalendar();
     }
 
+    // 日記日期切換
     function changeDiaryDate(daysDelta) {
         diaryDate.setDate(diaryDate.getDate() + daysDelta);
         renderDiaryPage();
@@ -241,15 +242,13 @@
         const m = diaryDate.getMonth() + 1;
         const d = diaryDate.getDate();
 
-        // 更新頂部日期文字
         document.getElementById('diary-date-label').innerText = `${y}年 ${m}月${d}日`;
 
-        // 讀取該日期暫存內容
         const key = `diary_${y}_${m}_${d}`;
         document.getElementById('diary-box').value = localStorage.getItem(key) || "";
     }
 
-    // 日記即時打字存檔功能
+    // 日記即時打字存檔
     function saveDiaryContent() {
         const y = diaryDate.getFullYear();
         const m = diaryDate.getMonth() + 1;
@@ -257,6 +256,56 @@
         
         const key = `diary_${y}_${m}_${d}`;
         localStorage.setItem(key, document.getElementById('diary-box').value);
+    }
+
+    // 串接經文
+    async function fetchFHLBible(readingStr) {
+        const bibleBody = document.getElementById('bible-body');
+        const bibleTitle = document.getElementById('bible-title');
+        
+        if (readingStr === "休息") {
+            bibleTitle.innerText = "今日休息";
+            bibleBody.innerHTML = "今天是休息日，可以默想或是補上之前的進度。";
+            return;
+        }
+
+        bibleTitle.innerText = readingStr;
+        bibleBody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--secondary-color);">正在下載全章經文...</div>`;
+
+        try {
+            const parts = readingStr.split(' ');
+            const book = parts[0]; /* 得到書卷名稱 */
+            const range = parts[1]; /* 得到章節範圍 */
+            
+            let chapters = [];
+            if (range.includes('-')) { /* 辨識是否跨章節 */
+                const [start, end] = range.split('-').map(Number);
+                for (let i = start; i <= end; i++) chapters.push(i);
+            } else {
+                chapters.push(Number(range));
+            }
+            
+            const fetchPromises = chapters.map(chap => {
+                const url = `https://bible.fhl.net/json/qb.php?chineses=${encodeURIComponent(book)}&chap=${chap}&version=unv&strong=0&gb=0`;
+                return fetch(url).then(res => res.json());
+            });
+
+            const results = await Promise.all(fetchPromises);
+
+            let html = "";
+            results.forEach(data => {
+                if (data.record && data.record.length > 0) {
+                    html += `<h4 class="chap-title">第 ${data.record[0].chap} 章</h4>`;
+                    data.record.forEach(v => {
+                        html += `<p><span class="verse-num">${v.sec}</span>${v.bible_text}</p>`;
+                    });
+                }
+            });
+
+            bibleBody.innerHTML = html || "找不到經文內容，請檢查格式。";
+        } catch (error) {
+            bibleBody.innerHTML = "經文連線失敗，請檢查網路狀態。";
+        }
     }
 
     // 月曆格子點擊事件
@@ -273,9 +322,8 @@
         
         document.getElementById('modal').style.display = 'flex';
         
-        if (typeof fetchFHLBible === 'function') {
-            fetchFHLBible(reading);
-        }
+        // 點開格子時，順便在背景開始悄悄下載經文
+        fetchFHLBible(reading);
     }
 
     function switchToBible() {
@@ -302,7 +350,7 @@
     // 啟動與初始化
     initData();
     renderCalendar();
-    renderDiaryPage(); // 初始化日記頁面為今天
+    renderDiaryPage();
 </script>
 
 </body>
