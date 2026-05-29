@@ -102,32 +102,56 @@
             border: 1px solid var(--secondary-color);
         }
         .btn-action { 
-            background: var(--accent-color); color: white; border: none; padding: 14px; 
-            border-radius: 15px; margin-top: 20px; width: 100%; font-size: 1rem; cursor: pointer; font-weight: bold;
+            color: white; border: none; padding: 14px; 
+            border-radius: 15px; margin-top: 12px; width: 100%; font-size: 1rem; cursor: pointer; font-weight: bold;
         }
-        .btn-action.is-done { background: var(--success-color); }
+        /* 閱讀按鈕：亮橘色 */
+        .btn-read { background: var(--accent-color); }
+
+        /* 完成按鈕：預設為鋼鐵藍，完成後會變鼠尾草綠 */
+        .btn-complete { background: var(--secondary-color); }
+        .btn-complete.is-done { background: var(--success-color); }
 
         /* 底部導航 */
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; height: 75px; 
             background: var(--nav-bg); display: flex; justify-content: space-around; 
-            align-items: center; padding-bottom: env(safe-area-inset-bottom); 
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.3); 
+            align-items: center; padding: 0 10px;
+            border-top: 2px solid var(--secondary-color); 
         }
+
         .nav-item { 
-            border: none; background: none; font-size: 0.9rem; display: flex; 
-            flex-direction: column; align-items: center; color: var(--text-color); 
-            opacity: 0.5; transition: 0.3s; cursor: pointer; padding: 10px;
+            border: none; 
+            background: rgba(255, 255, 255, 0.05); /* 沒選中時，淡淡的灰色底 */
+            font-size: 1.1rem; /* 字體放大，看得很明確 */
+            font-weight: bold;
+            color: var(--text-color); 
+            opacity: 0.5; /* 沒選中時，字體半透明 */
+            cursor: pointer; 
+            height: 50px; 
+            width: 30%; /* 三個按鈕平分寬度 */
+            border-radius: 10px; /* 簡單的微圓角 */
+            transition: 0.1s;
         }
-        .nav-item.active-nav { opacity: 1; font-weight: bold; color: var(--accent-color); }
+
+        /* 選中的按鈕直接變成醒目的亮橘色塊，字體完全顯現 */
+        .nav-item.active-nav { 
+            opacity: 1; color: white; background: var(--accent-color);
+        }
 
         /* 聖經與日記區 */
-        .bible-container { background: var(--card-color); border-radius: 20px; padding: 20px; border: 1px solid var(--secondary-color); line-height: 1.8; }
+        .bible-container { 
+            background: var(--card-color); border-radius: 20px; padding: 20px; border: 1px solid var(--secondary-color); 
+            line-height: 1.8; 
+            font-size: 1.05rem; /* 設定初始字體大小為正常 */
+        }
+        /* 確保內文段落放大時，上下間距也能自動撐開，保持閱讀舒適度 */
+        #bible-body p { margin: 14px 0; }
         .verse-num { color: var(--secondary-color); font-size: 0.8rem; margin-right: 6px; vertical-align: super; }
         .chap-title { color: var(--accent-color); border-bottom: 1px solid var(--secondary-color); padding: 20px 0 5px 0; margin-top: 0; }
         
         textarea { 
-            width: 100%; height: 400px; border: 1px solid var(--secondary-color); 
+            width: 100%; height: 340px; border: 1px solid var(--secondary-color); 
             border-radius: 20px; padding: 20px; background: var(--card-color); 
             font-size: 1.05rem; outline: none; resize: none; color: var(--text-color); 
         }
@@ -141,6 +165,20 @@
     <section id="bible" class="page">
         <div class="bible-container">
             <h3 id="bible-title" style="margin-top:0; color:var(--accent-color);">請選擇日期</h3>
+        
+            <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span style="font-size: 0.9rem; color: var(--secondary-color); font-weight: bold;">字體大小：</span>
+                <button id="font-btn-normal" style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s;" onclick="changeBibleFontSize('1.05rem', 'normal')">正常</button>
+                <button id="font-btn-large" style="background: var(--secondary-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s;" onclick="changeBibleFontSize('1.35rem', 'large')">放大</button>
+                <button id="font-btn-xlarge" style="background: var(--secondary-color); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: 0.2s;" onclick="changeBibleFontSize('1.65rem', 'xlarge')">特大</button>
+            </div>
+
+            <div style="margin-bottom: 15px; display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;">
+                <span style="font-size: 0.9rem; color: var(--secondary-color); font-weight: bold;">手動查詢：</span>
+                <input type="text" id="bible-search-input" placeholder="例如：創 1 或 約 3-4" style="flex: 1; background: var(--bg-color); border: 1px solid var(--secondary-color); border-radius: 6px; padding: 6px 10px; color: white; font-size: 0.95rem; outline: none;">
+                <button style="background: var(--accent-color); color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem;" onclick="searchBibleCustom()">查詢</button>
+            </div>
+
             <div id="bible-body">點擊月曆中的日期，即可在此閱讀經文內容。</div>
         </div>
     </section>
@@ -161,15 +199,20 @@
             <button class="nav-arrow" onclick="changeDiaryDate(1)">›</button>
         </div>
         <textarea id="diary-box" placeholder="寫下這日的心得或禱告" oninput="saveDiaryContent()"></textarea>
+        <button class="btn-action btn-read" style="margin-top: 12px;" onclick="downloadDiaryAsFile()">將今日日記匯出成文字檔</button>
     </section>
 </main>
 
 <div class="modal" id="modal" onclick="closeModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h2 id="modal-date" style="margin-top: 0;">日期</h2>
-        <div id="modal-reading" style="font-size: 1.6rem; margin: 20px 0; font-weight: bold; color: var(--accent-color);">載入中...</div>
-        <button id="modal-btn" class="btn-action" onclick="toggleComplete()">標記為已達成</button>
-        <p style="margin-top: 25px; color: var(--secondary-color); font-weight: bold; cursor: pointer;" onclick="switchToBible()">前往閱讀經文</p>
+        <div id="modal-reading" style="font-size: 1.6rem; margin: 15px 0; font-weight: bold; color: var(--accent-color);">載入中...</div>
+        
+        <button class="btn-action btn-read" onclick="switchToBible()">前往閱讀經文</button>
+        
+        <button id="modal-btn" class="btn-action btn-complete" onclick="toggleComplete()">標記為已達成</button>
+        
+        <p style="margin-top: 20px; margin-bottom: 0; color: var(--secondary-color); font-weight: bold; cursor: pointer; font-size: 0.95rem;" onclick="closeModal()">關閉視窗</p>
     </div>
 </div>
 
@@ -258,6 +301,43 @@
         localStorage.setItem(key, document.getElementById('diary-box').value);
     }
 
+    // 匯出當前日記為本地文字檔 (.txt)
+    function downloadDiaryAsFile() {
+        const y = diaryDate.getFullYear();
+        const m = diaryDate.getMonth() + 1;
+        const d = diaryDate.getDate();
+        const diaryText = document.getElementById('diary-box').value;
+        
+        if (diaryText.trim() === "") {
+            alert("今天還沒有寫任何日記內容喔！");
+            return;
+        }
+        
+        const fileContent = `【SJPCT 靈修隨身本 - 靈修日記】\n日期：${y}年 ${m}月 ${d}日\n---------------------------\n\n${diaryText}`;
+        const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+        const tempLink = document.createElement("a");
+        tempLink.download = `${y}-${m}-${d}_靈修日記.txt`;
+        tempLink.href = URL.createObjectURL(blob);
+        tempLink.click();
+        URL.revokeObjectURL(tempLink.href);
+    }
+
+    // 查詢經卷
+    function searchBibleCustom() {
+        let searchString = document.getElementById('bible-search-input').value.trim();
+        if (searchString === "") {
+            alert("請先輸入經卷與章節，例如：創 1");
+            return;
+        }
+    
+        if (!searchString.includes(' ')) {
+            // 找到第一個出現數字或減號的地方，並在前面加空格
+            searchString = searchString.replace(/([0-9\-\uFF10-\uFF19])/, ' $1');
+        }
+    
+        fetchFHLBible(searchString);
+    }
+
     // 串接經文
     async function fetchFHLBible(readingStr) {
         const bibleBody = document.getElementById('bible-body');
@@ -273,9 +353,10 @@
         bibleBody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--secondary-color);">正在下載全章經文...</div>`;
 
         try {
-            const parts = readingStr.split(' ');
-            const book = parts[0]; /* 得到書卷名稱 */
-            const range = parts[1]; /* 得到章節範圍 */
+            const cleanStr = readingStr.replace(/\s+/g, ' '); // 把多餘的空白都清掉，確保格式統一，避免使用者輸入時不小心多按空格
+            const parts = cleanStr.split(' '); // 用清洗過的字串來切，確保書卷名稱與章節範圍能正確分開
+            const book = parts[0]; // 得到書卷名稱 
+            const range = parts[1]; // 得到章節範圍 
             
             let chapters = [];
             if (range.includes('-')) { /* 辨識是否跨章節 */
@@ -318,7 +399,7 @@
         const isDone = localStorage.getItem(`done_${viewYear}_${viewMonth}_${d}`);
         const btn = document.getElementById('modal-btn');
         btn.innerText = isDone ? "已達成" : "標記為已達成";
-        btn.className = isDone ? "btn-action is-done" : "btn-action";
+        btn.className = isDone ? "btn-action btn-complete is-done" : "btn-action btn-complete";
         
         document.getElementById('modal').style.display = 'flex';
         
@@ -345,6 +426,27 @@
         document.getElementById(pageId).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active-nav'));
         btn.classList.add('active-nav');
+    }
+
+    // 控制經文的字體大小
+    function changeBibleFontSize(sizeString, activeType) {
+        document.getElementById('bible-body').style.fontSize = sizeString;
+
+        // 初始化是藍色
+        document.getElementById('font-btn-normal').style.background = 'var(--secondary-color)';
+        document.getElementById('font-btn-large').style.background = 'var(--secondary-color)';
+        document.getElementById('font-btn-xlarge').style.background = 'var(--secondary-color)';
+
+        // 被點到的就改成亮橘
+        if (activeType === 'normal') {
+            document.getElementById('font-btn-normal').style.background = 'var(--accent-color)';
+        }
+        if (activeType === 'large') {
+            document.getElementById('font-btn-large').style.background = 'var(--accent-color)';
+        }
+        if (activeType === 'xlarge') {
+            document.getElementById('font-btn-xlarge').style.background = 'var(--accent-color)';
+        }
     }
 
     // 啟動與初始化
