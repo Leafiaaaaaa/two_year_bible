@@ -199,7 +199,13 @@
             <button class="nav-arrow" onclick="changeDiaryDate(1)">›</button>
         </div>
         <textarea id="diary-box" placeholder="寫下這日的心得或禱告" oninput="saveDiaryContent()"></textarea>
-        <button class="btn-action btn-read" style="margin-top: 12px;" onclick="downloadDiaryAsFile()">將今日日記匯出成文字檔</button>
+        
+        <div style="margin-top: 15px; text-align: center; font-size: 1.2rem; color: var(--accent-color); line-height: 1.5; font-weight: bold;">
+            提醒您，若您刪除瀏覽資料，所有已儲存的日記內容將清空<br>
+            若有需要存留請自行點擊以下按鈕儲存文字檔
+        </div>
+        
+        <button class="btn-action btn-read" style="margin-top: 8px;" onclick="downloadDiaryAsFile()">將今日日記匯出成文字檔</button>
     </section>
 </main>
 
@@ -349,8 +355,8 @@
             return;
         }
 
-        bibleTitle.innerText = readingStr;
-        bibleBody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--secondary-color);">正在下載全章經文...</div>`;
+        bibleTitle.innerText = `${readingStr} (和合本修訂版)`;
+        bibleBody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--secondary-color);">正在下載 2010和合本修訂版 經文...</div>`;
 
         try {
             const cleanStr = readingStr.replace(/\s+/g, ' '); // 把多餘的空白都清掉，確保格式統一，避免使用者輸入時不小心多按空格
@@ -367,7 +373,7 @@
             }
             
             const fetchPromises = chapters.map(chap => {
-                const url = `https://bible.fhl.net/json/qb.php?chineses=${encodeURIComponent(book)}&chap=${chap}&version=unv&strong=0&gb=0`;
+                const url = `https://bible.fhl.net/json/qb.php?chineses=${encodeURIComponent(book)}&chap=${chap}&version=rcuv&strong=0&gb=0`;
                 return fetch(url).then(res => res.json());
             });
 
@@ -383,10 +389,47 @@
                 }
             });
 
+            // 如果成功下載到經文，在最後方加上「今日進度已完成」的快捷按鈕
+            if (html) {
+                const key = `done_${viewYear}_${viewMonth}_${selectedDay}`;
+                const isDone = localStorage.getItem(key);
+                const btnText = isDone ? "今日進度已達成 ✓" : "標記今日進度已完成";
+                const btnClass = isDone ? "btn-action btn-complete is-done" : "btn-action btn-complete";
+
+                html += `
+                    <div style="margin-top: 30px; border-top: 1px solid var(--secondary-color); padding-top: 20px;">
+                        <button id="bible-quick-done-btn" class="${btnClass}" onclick="markCurrentReadingAsDone()">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            }
+
             bibleBody.innerHTML = html || "找不到經文內容，請檢查格式。";
         } catch (error) {
             bibleBody.innerHTML = "經文連線失敗，請檢查網路狀態。";
         }
+    }
+
+    // 在閱讀頁面直接標記已完成的快捷函式
+    function markCurrentReadingAsDone() {
+        const key = `done_${viewYear}_${viewMonth}_${selectedDay}`;
+        const btn = document.getElementById('bible-quick-done-btn');
+        
+        if (localStorage.getItem(key)) {
+            // 原本已完成 -> 取消完成
+            localStorage.removeItem(key);
+            btn.innerText = "標記今日進度已完成";
+            btn.className = "btn-action btn-complete";
+        } else {
+            // 原本未完成 -> 標記為完成
+            localStorage.setItem(key, "true");
+            btn.innerText = "今日進度已達成 ✓";
+            btn.className = "btn-action btn-complete is-done";
+        }
+        
+        // 即時刷新背景月曆格子顏色
+        renderCalendar();
     }
 
     // 月曆格子點擊事件
