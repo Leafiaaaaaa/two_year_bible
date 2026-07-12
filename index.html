@@ -122,19 +122,19 @@
 
         .nav-item { 
             border: none; 
-            background: rgba(255, 255, 255, 0.05); /* 沒選中時，淡淡的灰色底 */
-            font-size: 1.1rem; /* 字體放大，看得很明確 */
+            background: rgba(255, 255, 255, 0.05); /* 沒選中時 */
+            font-size: 1.1rem; 
             font-weight: bold;
             color: var(--text-color); 
-            opacity: 0.5; /* 沒選中時，字體半透明 */
+            opacity: 0.5;
             cursor: pointer; 
             height: 50px; 
-            width: 30%; /* 三個按鈕平分寬度 */
-            border-radius: 10px; /* 簡單的微圓角 */
+            width: 30%; 
+            border-radius: 10px;
             transition: 0.1s;
         }
 
-        /* 選中的按鈕直接變成醒目的亮橘色塊，字體完全顯現 */
+        /* 選中的按鈕 */
         .nav-item.active-nav { 
             opacity: 1; color: white; background: var(--accent-color);
         }
@@ -200,11 +200,13 @@
         </div>
         <textarea id="diary-box" placeholder="寫下這日的心得或禱告" oninput="saveDiaryContent()"></textarea>
         
+        <!-- 這裡新增了提示文字 -->
         <div style="margin-top: 15px; text-align: center; font-size: 1.2rem; color: var(--accent-color); line-height: 1.5; font-weight: bold;">
             提醒您，若您刪除瀏覽資料，所有已儲存的日記內容將清空<br>
             若有需要存留請自行點擊以下按鈕儲存文字檔
         </div>
         
+        <!-- 調整了按鈕的 margin-top 使間距更好看 -->
         <button class="btn-action btn-read" style="margin-top: 8px;" onclick="downloadDiaryAsFile()">將今日日記匯出成文字檔</button>
     </section>
 </main>
@@ -344,6 +346,44 @@
         fetchFHLBible(searchString);
     }
 
+    // 解析進度表資料
+    function parseBiblePlanString(str) {
+        const tasks = [];
+        const cleanStr = str.trim();
+
+        // 檢查是否為跨書卷格式，例如 "民 36-申 1" 或 "撒下 24-王上 1"
+        // 規則：[書卷A] [章A]-[書卷B] [章B]
+        const crossBookMatch = cleanStr.match(/^([^\d\s]+)\s+(\d+)\s*-\s*([^\d\s]+)\s+(\d+)$/);
+
+        if (crossBookMatch) {
+            const bookA = crossBookMatch[1];
+            const chapA = parseInt(crossBookMatch[2]);
+            const bookB = crossBookMatch[3];
+            const chapB = parseInt(crossBookMatch[4]);
+
+            // 分別加入兩個書卷的對應章節任務
+            tasks.push({ book: bookA, chap: chapA });
+            tasks.push({ book: bookB, chap: chapB });
+        } else {
+            // 一般格式，例如 "創 1-2" 或 "約 21"
+            const parts = cleanStr.split(' ');
+            if (parts.length >= 2) {
+                const book = parts[0];
+                const range = parts[1];
+
+                if (range.includes('-')) {
+                    const [start, end] = range.split('-').map(Number);
+                    for (let i = start; i <= end; i++) {
+                        tasks.push({ book: book, chap: i });
+                    }
+                } else {
+                    tasks.push({ book: book, chap: Number(range) });
+                }
+            }
+        }
+        return tasks;
+    }
+
     // 串接經文
     async function fetchFHLBible(readingStr) {
         const bibleBody = document.getElementById('bible-body');
@@ -355,41 +395,68 @@
             return;
         }
 
-        bibleTitle.innerText = `${readingStr} (和合本修訂版)`;
+        bibleTitle.innerText = `${readingStr} (和合本2010修訂版)`;
         bibleBody.innerHTML = `<div style="text-align:center; padding:20px; color:var(--secondary-color);">正在下載 2010和合本修訂版 經文...</div>`;
 
         try {
-            const cleanStr = readingStr.replace(/\s+/g, ' '); // 把多餘的空白都清掉，確保格式統一，避免使用者輸入時不小心多按空格
-            const parts = cleanStr.split(' '); // 用清洗過的字串來切，確保書卷名稱與章節範圍能正確分開
-            const book = parts[0]; // 得到書卷名稱 
-            const range = parts[1]; // 得到章節範圍 
+            // 解析出所有需要下載的書卷與章節任務
+            const queryTasks = parseBiblePlanString(readingStr);
             
-            let chapters = [];
-            if (range.includes('-')) { /* 辨識是否跨章節 */
-                const [start, end] = range.split('-').map(Number);
-                for (let i = start; i <= end; i++) chapters.push(i);
-            } else {
-                chapters.push(Number(range));
+            if (queryTasks.length === 0) {
+                bibleBody.innerHTML = "無法解析經文格式，請檢查輸入內容。";
+                return;
             }
-            
-            const fetchPromises = chapters.map(chap => {
-                const url = `https://bible.fhl.net/json/qb.php?chineses=${encodeURIComponent(book)}&chap=${chap}&version=rcuv&strong=0&gb=0`;
-                return fetch(url).then(res => res.json());
+
+            // 發送非同步請求
+            const fetchPromises = queryTasks.map(task => {
+                const url = `https://bible.fhl.net/json/qb.php?chineses=${encodeURIComponent(task.book)}&chap=${task.chap}&version=rcuv&strong=0&gb=0`;
+                return fetch(url).then(res => res.json()).then(data => ({ task, data }));
             });
 
             const results = await Promise.all(fetchPromises);
 
             let html = "";
-            results.forEach(data => {
+            let currentBook = "";
+
+            results.forEach(({ task, data }) => {
                 if (data.record && data.record.length > 0) {
+                    // 切換書卷時（例如民數記換到申命記），動態補上書卷的大標題
+                    if (currentBook !== task.book) {
+                        currentBook = task.book;
+                        html += `<h3 style="color:var(--accent-color); margin-top:25px; border-bottom:2px solid var(--accent-color); padding-bottom:5px;">${currentBook}</h3>`;
+                    }
+                    
                     html += `<h4 class="chap-title">第 ${data.record[0].chap} 章</h4>`;
-                    data.record.forEach(v => {
-                        html += `<p><span class="verse-num">${v.sec}</span>${v.bible_text}</p>`;
-                    });
+                    
+                    const records = data.record;
+                    for (let i = 0; i < records.length; i++) {
+                        const currentVerse = records[i];
+                        let displaySec = currentVerse.sec; // 預設顯示的節數
+                        
+                        // 檢查有沒有下一節
+                        if (i + 1 < records.length) {
+                            const nextVerse = records[i + 1];
+                            // 判斷下一節的節數是否包含 "=a"
+                            if (nextVerse.sec.toString().includes('=a')) {
+                                // 提取下一節的純數字（例如把 "34=a" 變成 "34"）
+                                const nextNum = nextVerse.sec.toString().replace('=a', '');
+                                // 修改當前節數為範圍格式（例如 "33-34"）
+                                displaySec = `${currentVerse.sec}-${nextNum}`;
+                            }
+                        }
+
+                        // 如果當前這一節自己就是帶有 "=a" 的合併節，則不重複顯示數字標籤
+                        if (currentVerse.sec.toString().includes('=a')) {
+                            html += `<p>${currentVerse.bible_text}</p>`;
+                        } else {
+                            // 一般節或已被合併的起始節，正常顯示節數
+                            html += `<p><span class="verse-num">${displaySec}</span>${currentVerse.bible_text}</p>`;
+                        }
+                    }
                 }
             });
 
-            // 如果成功下載到經文，在最後方加上「今日進度已完成」的快捷按鈕
+            // 在最後方加上「今日進度已完成」的快捷按鈕
             if (html) {
                 const key = `done_${viewYear}_${viewMonth}_${selectedDay}`;
                 const isDone = localStorage.getItem(key);
@@ -446,7 +513,7 @@
         
         document.getElementById('modal').style.display = 'flex';
         
-        // 點開格子時，順便在背景開始悄悄下載經文
+        // 點開格子時，順便在背景開始下載經文
         fetchFHLBible(reading);
     }
 
@@ -455,6 +522,7 @@
         switchPage('bible', document.getElementById('nav-bible'));
     }
 
+    // 彈出視窗的標記完成
     function toggleComplete() {
         const key = `done_${viewYear}_${viewMonth}_${selectedDay}`;
         localStorage.getItem(key) ? localStorage.removeItem(key) : localStorage.setItem(key, "true");
@@ -475,12 +543,10 @@
     function changeBibleFontSize(sizeString, activeType) {
         document.getElementById('bible-body').style.fontSize = sizeString;
 
-        // 初始化是藍色
         document.getElementById('font-btn-normal').style.background = 'var(--secondary-color)';
         document.getElementById('font-btn-large').style.background = 'var(--secondary-color)';
         document.getElementById('font-btn-xlarge').style.background = 'var(--secondary-color)';
 
-        // 被點到的就改成亮橘
         if (activeType === 'normal') {
             document.getElementById('font-btn-normal').style.background = 'var(--accent-color)';
         }
