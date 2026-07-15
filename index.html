@@ -78,6 +78,14 @@
             transition: all 0.2s ease;
         }
 
+        /* 滑鼠移過去時的反白效果 */
+        .day-cell:not(.empty):hover {
+            background-color: var(--secondary-color); /* 懸停時變鋼鐵藍 */
+            color: var(--accent-color); /* 文字變橘色 */
+            filter: brightness(1.15); /* 稍微變亮 */
+            transform: scale(1.05); /* 輕微放大 */
+        }
+
         .day-cell.today { border: 2.5px solid var(--accent-color); font-weight: bold; color: var(--accent-color); }
         .day-cell.empty { background: transparent; cursor: default; }
 
@@ -97,7 +105,7 @@
             background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; 
         }
         .modal-content { 
-            background: var(--bg-color); width: 100%; max-width: 320px; padding: 30px; 
+            background: var(--bg-color); width: 100%; max-width: 320px; padding: 25px 30px; 
             border-radius: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
             border: 1px solid var(--secondary-color);
         }
@@ -107,6 +115,9 @@
         }
         /* 閱讀按鈕：亮橘色 */
         .btn-read { background: var(--accent-color); }
+
+        /* 新增日記按鈕：使用深藍色 */
+        .btn-diary-go { background: #3E5C76; }
 
         /* 完成按鈕：預設為鋼鐵藍，完成後會變鼠尾草綠 */
         .btn-complete { background: var(--secondary-color); }
@@ -200,13 +211,11 @@
         </div>
         <textarea id="diary-box" placeholder="寫下這日的心得或禱告" oninput="saveDiaryContent()"></textarea>
         
-        <!-- 這裡新增了提示文字 -->
         <div style="margin-top: 15px; text-align: center; font-size: 1.2rem; color: var(--accent-color); line-height: 1.5; font-weight: bold;">
             提醒您，若您刪除瀏覽資料，所有已儲存的日記內容將清空<br>
             若有需要存留請自行點擊以下按鈕儲存文字檔
         </div>
         
-        <!-- 調整了按鈕的 margin-top 使間距更好看 -->
         <button class="btn-action btn-read" style="margin-top: 8px;" onclick="downloadDiaryAsFile()">將今日日記匯出成文字檔</button>
     </section>
 </main>
@@ -216,8 +225,9 @@
         <h2 id="modal-date" style="margin-top: 0;">日期</h2>
         <div id="modal-reading" style="font-size: 1.6rem; margin: 15px 0; font-weight: bold; color: var(--accent-color);">載入中...</div>
         
+        <!-- 按鈕群 -->
         <button class="btn-action btn-read" onclick="switchToBible()">前往閱讀經文</button>
-        
+        <button class="btn-action btn-diary-go" onclick="switchToDiary()">撰寫今日靈修日記</button>
         <button id="modal-btn" class="btn-action btn-complete" onclick="toggleComplete()">標記為已達成</button>
         
         <p style="margin-top: 20px; margin-bottom: 0; color: var(--secondary-color); font-weight: bold; cursor: pointer; font-size: 0.95rem;" onclick="closeModal()">關閉視窗</p>
@@ -403,7 +413,7 @@
             const queryTasks = parseBiblePlanString(readingStr);
             
             if (queryTasks.length === 0) {
-                bibleBody.innerHTML = "無法解析經文格式，請檢查輸入內容。";
+                bibleBody.innerHTML = "無法解析經文格式，請檢查輸入內容. ";
                 return;
             }
 
@@ -431,32 +441,19 @@
                     const records = data.record;
                     for (let i = 0; i < records.length; i++) {
                         const currentVerse = records[i];
-                        let displaySec = currentVerse.sec; // 預設顯示的節數
-                        
-                        // 檢查有沒有下一節
-                        if (i + 1 < records.length) {
-                            const nextVerse = records[i + 1];
-                            // 判斷下一節的節數是否包含 "=a"
-                            if (nextVerse.sec.toString().includes('=a')) {
-                                // 提取下一節的純數字（例如把 "34=a" 變成 "34"）
-                                const nextNum = nextVerse.sec.toString().replace('=a', '');
-                                // 修改當前節數為範圍格式（例如 "33-34"）
-                                displaySec = `${currentVerse.sec}-${nextNum}`;
-                            }
-                        }
+                        const textTrim = currentVerse.bible_text.trim().toLowerCase();
 
-                        // 如果當前這一節自己就是帶有 "=a" 的合併節，則不重複顯示數字標籤
-                        if (currentVerse.sec.toString().includes('=a')) {
-                            html += `<p>${currentVerse.bible_text}</p>`;
+                        // 只判斷經文內容(bible_text)去除前後空白後是不是a
+                        if (textTrim === 'a') {
+                            html += `<p><span class="verse-num">${currentVerse.sec}</span><span style="color: var(--secondary-color); font-size: 1.05rem; font-weight: bold;">(併於上節)</span></p>`;
                         } else {
-                            // 一般節或已被合併的起始節，正常顯示節數
-                            html += `<p><span class="verse-num">${displaySec}</span>${currentVerse.bible_text}</p>`;
+                            html += `<p><span class="verse-num">${currentVerse.sec}</span>${currentVerse.bible_text}</p>`;
                         }
                     }
                 }
             });
 
-            // 在最後方加上「今日進度已完成」的快捷按鈕
+            // 在最後加上「今日進度已完成」的快捷按鈕
             if (html) {
                 const key = `done_${viewYear}_${viewMonth}_${selectedDay}`;
                 const isDone = localStorage.getItem(key);
@@ -520,6 +517,14 @@
     function switchToBible() {
         closeModal();
         switchPage('bible', document.getElementById('nav-bible'));
+    }
+
+    // 從彈窗跳轉至該日的日記頁面
+    function switchToDiary() {
+        closeModal();
+        diaryDate = new Date(viewYear, viewMonth - 1, selectedDay);
+        renderDiaryPage();
+        switchPage('diary', document.getElementById('nav-diary'));
     }
 
     // 彈出視窗的標記完成
